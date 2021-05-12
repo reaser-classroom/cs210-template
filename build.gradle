@@ -1,0 +1,41 @@
+plugins {
+	id 'java'
+}
+
+repositories {
+    jcenter()
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_15
+	targetCompatibility = JavaVersion.VERSION_15
+}
+
+dependencies {
+	// For JUnit 5
+	testCompile 'org.junit.jupiter:junit-jupiter:5.7.0'
+
+	// For JSON-P (Module 5)
+	compile 'jakarta.json:jakarta.json-api:2.0.0'
+	runtime 'org.glassfish:jakarta.json:2.0.0'
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += '--enable-preview'
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}
+
+test {
+	useJUnitPlatform()
+
+	testLogging {
+		showExceptions true
+		showCauses true
+		showStackTraces false
+		exceptionFormat 'full'
+		events 'passed', 'failed', 'standardOut', 'standardError'
+	}
+}
