@@ -1,0 +1,247 @@
+package grade;
+
+import static types.Status.*;
+
+import org.junit.jupiter.api.BeforeAll;
+
+public class Module3 extends SQLModule {
+	@BeforeAll
+	public static void setup() {
+		module_tag = "M3";
+
+		query_data = new Object[][]{
+			// PREREQUISITES
+			{ SUCCESSFUL, "m3_table", "CREATE TABLE m3_table (ps STRING PRIMARY, i INTEGER, b BOOLEAN); INSERT INTO m3_table VALUES (\"x\", null, true); INSERT INTO m3_table VALUES (\"xy\", 5, false); INSERT INTO m3_table VALUES (\"xx\", 4, true); INSERT INTO m3_table VALUES (\"y\", 1, null); INSERT INTO m3_table VALUES (\"yy\", 2, true); INSERT INTO m3_table VALUES (\"yx\", 3, false); INSERT INTO m3_table VALUES (\"z\", null, null); DUMP TABLE m3_table", "selection depends on table creation and insertion" },
+
+			// SELECT TABLE, SYNTAX: STAR FORM
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table", "star form is allowed" },
+			{ SUCCESSFUL, "_select", "select * from m3_table", "lowercase keywords are allowed" },
+			{ UNRECOGNIZED, "_select", "SELECT FROM m3_table", "star or column definition is missing" },
+			{ UNRECOGNIZED, "_select", "SELECT *, ps, i, b FROM m3_table", "star is not supported in a list of column names" },
+
+			// SELECT TABLE, SYNTAX: GENERAL FORM
+			{ SUCCESSFUL, "_select", "SELECT ps FROM m3_table", "a single column is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, i, b FROM m3_table", "multiple columns are allowed" },
+			{ SUCCESSFUL, "_select", "select ps, i, b from m3_table", "lowercase keywords are allowed" },
+			{ FAILED, "_select", "SELECT PS FROM m3_table", "column and table names are case sensitive" },
+			{ UNRECOGNIZED, "_select", "SELECT ps m3_table", "the FROM keyword is required" },
+			{ UNRECOGNIZED, "_select", "ps FROM m3_table", "the SELECT keyword is required" },
+			{ UNRECOGNIZED, "_select", "SELECT ps, i, b", "the FROM keyword and a table name are required" },
+			{ UNRECOGNIZED, "_select", "SELECT ps i b FROM m3_table", "column definitions must be separated by commas" },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: ALIASING
+			{ SUCCESSFUL, "_select", "SELECT ps AS primary FROM m3_table", "aliasing is supported" },
+			{ SUCCESSFUL, "_select", "SELECT ps AS primary, i, b FROM m3_table", "partial aliasing is supported" },
+			{ SUCCESSFUL, "_select", "SELECT ps AS primary, i AS number, b AS flag FROM m3_table", "aliasing is supported" },
+			{ SUCCESSFUL, "_select", "select ps as primary, i as number, b as flag from m3_table", "lowercase aliasing keywords are allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, i AS number, b AS flag FROM m3_table", "partial aliasing is supported" },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: REORDERING
+			{ SUCCESSFUL, "_select", "SELECT ps, b, i FROM m3_table", "reordering defined columns is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT i, b, ps FROM m3_table", "reordering defined columns is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT i AS number, b AS flag, ps AS primary FROM m3_table", "reordering defined columns with aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT i AS number, b AS flag, ps FROM m3_table", "reordering defined columns with partial aliasing is allowed" },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: REPETITION
+			{ SUCCESSFUL, "_select", "SELECT ps, i AS number_1, i AS number_2 FROM m3_table", "selecting repeated columns with unambiguous aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, i, i AS i_copy FROM m3_table", "selecting repeated columns with unambiguous aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, i AS i_copy, i FROM m3_table", "selecting repeated columns with unambiguous aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT b, b AS b_copy, ps FROM m3_table", "selecting repeated columns with unambiguous aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT b AS b_copy, b, ps FROM m3_table", "selecting repeated columns with unambiguous aliasing is allowed" },
+			{ FAILED, "_select", "SELECT ps, i, i FROM m3_table", "selecting repeated columns without unambiguous aliasing is not allowed" },
+			{ FAILED, "_select", "SELECT ps, b, i, b FROM m3_table", "selecting repeated columns without unambiguous aliasing is not allowed" },
+			{ FAILED, "_select", "SELECT ps, ps FROM m3_table", "selecting repeated columns without unambiguous aliasing is not allowed" },
+			{ FAILED, "_select", "SELECT ps AS primary, ps AS primary FROM m3_table", "selecting repeated columns without unambiguous aliasing is not allowed" },
+			{ FAILED, "_select", "SELECT i, b, ps AS primary, ps, ps FROM m3_table", "selecting repeated columns without unambiguous aliasing is not allowed" },
+
+			// SELECT TABLE, SEMANTICS: CROSS-ALIASING
+			{ SUCCESSFUL, "_select", "SELECT ps, i AS b, b AS i FROM m3_table", "cross-aliasing columns with unambiguous results is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, i AS b, i AS i_copy, b AS i, b AS b_copy, ps AS ps_copy FROM m3_table", "cross-aliasing columns with unambiguous results is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT i AS b, b AS ps, ps AS i FROM m3_table", "cross-aliasing columns with unambiguous results is allowed" },
+
+			// SELECT TABLE, SEMANTICS: PRIMARY COLUMN
+			{ SUCCESSFUL, "_select", "SELECT ps AS primary_1, ps AS primary_2 FROM m3_table", "selecting repeated primary column with unambiguous aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps AS primary_1, ps FROM m3_table", "selecting repeated primary column with unambiguous partial aliasing is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT ps, ps AS primary_2 FROM m3_table", "selecting repeated primary column with unambiguous partial aliasing is allowed" },
+			{ FAILED, "_select", "SELECT i, b FROM m3_table", "the primary column must be selected" },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: STRING CONDITIONS
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps = \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <> \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps < \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps > \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <= \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps >= \"y\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps = \"\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <> \"\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps < \"\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps > \"\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <= \"\"", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps >= \"\"", null },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: INTEGER CONDITIONS
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i = 3", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i <> 3", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i < 3", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i > 3", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i <= 3", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i >= 3", null },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: BOOLEAN CONDITIONS
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b = true", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b <> true", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b = false", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b <> false", null },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b < true", "inequality operator does not support booleans" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b > false", "inequality operator does not support booleans" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b <= true", "inequality operator does not support booleans" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b >= false", "inequality operator does not support booleans" },
+
+			// SELECT TABLE, SYNTAX AND SEMANTICS: NULL CONDITIONS
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps = null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <> null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i = null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i <> null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b = null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b <> null", null },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps < null", "operator < evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps > null", "operator > evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps <= null", "operator <= evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps >= null", "operator >= evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i < null", "operator < evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i > null", "operator > evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i <= null", "operator <= evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE i >= null", "operator >= evaluates as false when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b < null", "operator < is invalid for booleans even when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b > null", "operator > is invalid for booleans even when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b <= null", "operator <= is invalid for booleans even when operand is null" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE b >= null", "operator >= is invalid for booleans even when operand is null" },
+
+			// SELECT TABLE, SEMANTICS: TYPE INCOMPATIBILITY
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE ps = 3", "column and value types must match" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE ps = true", "column and value types must match" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE i = \"y\"", "column and value types must match" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE i = true", "column and value types must match" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b = \"y\"", "column and value types must match" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE b = 3", "column and value types must match" },
+
+			// SELECT TABLE, SYNTAX: WHERE
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table  WHERE  ps = \"y\"", "excess internal whitespace is allowed" },
+			{ SUCCESSFUL, "_select", "SELECT * FROM m3_table WHERE ps=\"y\"", "whitespace is not required around operators" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_table  i = 3", "the WHERE keyword is required" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_table WHERE  = 3", "the column is required" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_table WHERE i = ", "the value is required" },
+			{ FAILED, "_select", "SELECT * FROM m3_table WHERE x = 3", "the column name must be valid" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_table WHERE ps equals \"y\"", "the operator must be defined" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_table WHERE ps = asdf", "the value data type must be valid" },
+			{ UNRECOGNIZED, "_select", "SELECT * FROM m3_tableWHEREps = \"y\"", "whitespace between keywords and names is required" },
+
+			// SELECT TABLE, SEMANTICS: ALIASING WITH WHERE
+			{ SUCCESSFUL, "_select", "SELECT b, i, ps FROM m3_table WHERE ps <> \"z\"", "conditions support column reordering" },
+			{ SUCCESSFUL, "_select", "SELECT ps AS s FROM m3_table WHERE ps <> \"z\"", "conditions support unaliased column names" },
+		};
+
+		serial_data = new Object[][]{
+			{ "m3_table", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			null,
+			null,
+			{ "_select", 1, 0, "ps", "string", "x", "xy", "z", "y", "yx", "yy", "xx" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			null,
+			null,
+			null,
+			null,
+			null,
+			{ "_select", 1, 0, "primary", "string", "x", "xy", "z", "y", "yx", "yy", "xx" },
+			{ "_select", 3, 0, "primary", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "primary", "number", "flag", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "primary", "number", "flag", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "number", "flag", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "b", "i", "string", "boolean", "integer", "x", true, null, "xy", false, 5, "z", null, null, "y", null, 1, "yx", false, 3, "yy", true, 2, "xx", true, 4 },
+			{ "_select", 3, 2, "i", "b", "ps", "integer", "boolean", "string", null, true, "x", 5, false, "xy", null, null, "z", 1, null, "y", 3, false, "yx", 2, true, "yy", 4, true, "xx" },
+			{ "_select", 3, 2, "number", "flag", "primary", "integer", "boolean", "string", null, true, "x", 5, false, "xy", null, null, "z", 1, null, "y", 3, false, "yx", 2, true, "yy", 4, true, "xx" },
+			{ "_select", 3, 2, "number", "flag", "ps", "integer", "boolean", "string", null, true, "x", 5, false, "xy", null, null, "z", 1, null, "y", 3, false, "yx", 2, true, "yy", 4, true, "xx" },
+			{ "_select", 3, 0, "ps", "number_1", "number_2", "string", "integer", "integer", "x", null, null, "xy", 5, 5, "z", null, null, "y", 1, 1, "yx", 3, 3, "yy", 2, 2, "xx", 4, 4 },
+			{ "_select", 3, 0, "ps", "i", "i_copy", "string", "integer", "integer", "x", null, null, "xy", 5, 5, "z", null, null, "y", 1, 1, "yx", 3, 3, "yy", 2, 2, "xx", 4, 4 },
+			{ "_select", 3, 0, "ps", "i_copy", "i", "string", "integer", "integer", "x", null, null, "xy", 5, 5, "z", null, null, "y", 1, 1, "yx", 3, 3, "yy", 2, 2, "xx", 4, 4 },
+			{ "_select", 3, 2, "b", "b_copy", "ps", "boolean", "boolean", "string", true, true, "x", false, false, "xy", null, null, "z", null, null, "y", false, false, "yx", true, true, "yy", true, true, "xx" },
+			{ "_select", 3, 2, "b_copy", "b", "ps", "boolean", "boolean", "string", true, true, "x", false, false, "xy", null, null, "z", null, null, "y", false, false, "yx", true, true, "yy", true, true, "xx" },
+			null,
+			null,
+			null,
+			null,
+			null,
+			{ "_select", 3, 0, "ps", "b", "i", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 6, 0, "ps", "b", "i_copy", "i", "b_copy", "ps_copy", "string", "integer", "integer", "boolean", "boolean", "string", "x", null, null, true, true, "x", "xy", 5, 5, false, false, "xy", "z", null, null, null, null, "z", "y", 1, 1, null, null, "y", "yx", 3, 3, false, false, "yx", "yy", 2, 2, true, true, "yy", "xx", 4, 4, true, true, "xx" },
+			{ "_select", 3, 2, "b", "ps", "i", "integer", "boolean", "string", null, true, "x", 5, false, "xy", null, null, "z", 1, null, "y", 3, false, "yx", 2, true, "yy", 4, true, "xx" },
+			{ "_select", 2, 0, "primary_1", "primary_2", "string", "string", "x", "x", "xy", "xy", "z", "z", "y", "y", "yx", "yx", "yy", "yy", "xx", "xx" },
+			{ "_select", 2, 0, "primary_1", "ps", "string", "string", "x", "x", "xy", "xy", "z", "z", "y", "y", "yx", "yx", "yy", "yy", "xx", "xx" },
+			{ "_select", 2, 0, "ps", "primary_2", "string", "string", "x", "x", "xy", "xy", "z", "z", "y", "y", "yx", "yx", "yy", "yy", "xx", "xx" },
+			null,
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "y", 1, null },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xy", 5, false, "x", null, true, "z", null, null, "yy", 2, true, "xx", 4, true, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xy", 5, false, "x", null, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "z", null, null, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xy", 5, false, "x", null, true, "y", 1, null, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "y", 1, null, "z", null, null, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "x", null, true, "xy", 5, false, "z", null, null, "y", 1, null, "yx", 3, false, "yy", 2, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "xy", 5, false, "y", 1, null, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "y", 1, null },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xx", 4, true, "xy", 5, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "y", 1, null, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xx", 4, true, "xy", 5, false, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "x", null, true, "xx", 4, true },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xy", 5, false, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "xy", 5, false, "yx", 3, false },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "yy", 2, true, "x", null, true, "xx", 4, true },
+			null,
+			null,
+			null,
+			null,
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean" },
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "y", 1, null },
+			{ "_select", 3, 0, "ps", "i", "b", "string", "integer", "boolean", "y", 1, null },
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			{ "_select", 3, 2, "b", "i", "ps", "boolean", "integer", "string", false, 5, "xy", true, null, "x", null, 1, "y", true, 2, "yy", true, 4, "xx", false, 3, "yx" },
+			{ "_select", 1, 0, "s", "string", "xy", "x", "y", "yy", "xx", "yx" }
+		};
+	}
+}
